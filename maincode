@@ -1,0 +1,126 @@
+# Function to predict custom input
+def predict_custom(sex, address, age, studytime, absences, mjob, fjob):
+    # Encode inputs
+    sex = 1 if sex == 'M' else 0
+    address = 1 if address == 'U' else 0
+    
+    # Create a DataFrame for the input
+    input_data = pd.DataFrame({
+        'sex': [sex],
+        'address': [address],
+        'age': [age],
+        'studytime': [studytime],
+        'absences': [absences]
+    })
+    
+    # One-hot encoding for Mjob and Fjob
+    mjob_encoded = pd.get_dummies(pd.Series([mjob]), prefix='Mjob', drop_first=True)
+    fjob_encoded = pd.get_dummies(pd.Series([fjob]), prefix='Fjob', drop_first=True)
+    
+    # Combine input data
+    input_data = pd.concat([input_data, mjob_encoded, fjob_encoded], axis=1)
+
+    # Ensure all necessary columns are present in the input data
+    for col in X.columns:
+        if col not in input_data.columns:
+            input_data[col] = 0  # If column is missing, fill with 0
+
+    # Reorder columns to match the model's expected input
+    input_data = input_data[X.columns]
+    
+    # Scale the input data
+    input_data_scaled = scaler.transform(input_data)  # Scale with the fitted scaler
+    
+    # Make prediction
+    predicted_grade = model.predict(input_data_scaled)
+    return predicted_grade[0]
+
+# User Input Example
+print("Enter your inputs to predict the final grade (on a scale of 0 to 20):")
+sex_input = input("Enter sex (M/F): ").strip().upper()
+address_input = input("Enter address type (Urban: U, Rural: R): ").strip().upper()
+age_input = int(input("Enter age (numeric): ").strip())
+studytime_input = int(input("Enter study time (1: <2 hours, 2: 2-5 hours, 3: 5-10 hours, 4: >10 hours): ").strip())
+absences_input = int(input("Enter number of absences (numeric): ").strip())
+mjob_input = input("Enter mother's job (teacher, health, services, at_home, other): ").strip().lower()
+fjob_input = input("Enter father's job (teacher, health, services, at_home, other): ").strip().lower()
+
+# Predicting based on user inputs
+predicted_grade_user = predict_custom(
+    sex=sex_input,
+    address=address_input,
+    age=age_input,
+    studytime=studytime_input,
+    absences=absences_input,
+    mjob=mjob_input,
+    fjob=fjob_input
+)
+
+print(f"Predicted Final Grade (Your Input) on a scale of 0 to 20: {predicted_grade_user:.2f}")
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+# Assuming `student_data` DataFrame is already defined with G1, G2, G3, and feature columns.
+
+# 1. Plot G1 and G2 vs G3
+plt.figure(figsize=(12, 6))
+
+# Scatter plot for G1 vs G3
+plt.subplot(1, 2, 1)
+sns.scatterplot(data=student_data, x='G1', y='G3', alpha=0.6)
+plt.title('G1 vs G3')
+plt.xlabel('G1 Grade')
+plt.ylabel('G3 Final Grade')
+plt.axhline(y=10, color='r', linestyle='--', label='Passing Grade (10)')
+plt.legend()
+
+# Scatter plot for G2 vs G3
+plt.subplot(1, 2, 2)
+sns.scatterplot(data=student_data, x='G2', y='G3', alpha=0.6)
+plt.title('G2 vs G3')
+plt.xlabel('G2 Grade')
+plt.ylabel('G3 Final Grade')
+plt.axhline(y=10, color='r', linestyle='--', label='Passing Grade (10)')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# 2. Feature Importance
+# Fit the model again to extract feature importances
+model.fit(X_train_scaled, y_train)
+
+# Get the feature importances from the linear regression model
+importance = model.coef_
+feature_names = X.columns
+
+# Create a DataFrame for better visualization
+importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': importance})
+importance_df = importance_df.sort_values(by='Importance', ascending=False)
+
+# Plotting feature importances
+plt.figure(figsize=(10, 6))
+sns.barplot(x='Importance', y='Feature', data=importance_df, palette='viridis')
+plt.title('Feature Importance in Predicting G3 Final Grade')
+plt.xlabel('Importance (Coefficient)')
+plt.ylabel('Features')
+plt.show()
+
+# 3. Plot Predicted Values vs Actual Values
+# Predict on the test set
+y_pred = model.predict(X_test_scaled)
+
+plt.figure(figsize=(8, 6))
+plt.scatter(y_test, y_pred, alpha=0.6)
+plt.plot([0, 20], [0, 20], '--r', label='Perfect Prediction')
+plt.title('Actual vs Predicted G3 Final Grades')
+plt.xlabel('Actual G3 Grade')
+plt.ylabel('Predicted G3 Grade')
+plt.xlim(0, 20)
+plt.ylim(0, 20)
+plt.legend()
+plt.grid()
+plt.show()
+
